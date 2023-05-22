@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "transformers-intro"
+version = "0.1.0"
+description = ""
+authors = ["Federico Visintini <federico.visintini@sns.it>"]
+readme = "README.md"
+packages = [{include = "transformers_intro"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^2.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
