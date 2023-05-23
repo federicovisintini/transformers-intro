@@ -1,18 +1,31 @@
+import typing as t
+
 from torch import nn
+
+from src.model.embedding import Embedding
+from src.model.encoder import Encoder
+from src.model.positional_encoder import PositionalEncoder
 
 
 class Transformer(nn.Module):
-    def __init__(self, embedding):
+    def __init__(
+            self,
+            embedding: Embedding,
+            positional_encoder: PositionalEncoder,
+            encoders: t.List[Encoder]
+    ):
         super().__init__()
         self.embedding = embedding
-
-        self.layer1 = nn.Linear(self.embedding.embedding_size, 32)
-        self.fn1 = nn.ReLU()
-        self.layer2 = nn.Linear(32, 4)
-        self.fn2 = nn.Softmax()
+        self.positional_encoder = positional_encoder
+        self.encoders = nn.ModuleList(encoders)
 
     def forward(self, token):
-        embedded_x = self.embedding(token)
+        embedded_tokens = self.embedding(token)
 
-        out1 = self.fn1(self.layer1(embedded_x))
-        return self.fn2(self.layer2(out1))
+        x = self.positional_encoder(embedded_tokens)
+
+        for i, encoder in enumerate(self.encoders):
+            print(f"Passing in encoder {i}")
+            x = encoder(x)
+
+        return x
