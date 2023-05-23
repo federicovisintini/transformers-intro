@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizerFast
 
 from src.device import DEVICE
+from src.parameters import NUM_TOKENS, BATCH_SIZE
 
 train_ds = load_dataset("wmt14", 'de-en', split="train").with_format("torch")
 validation_ds = load_dataset("wmt14", 'de-en', split="validation").with_format("torch")
@@ -13,7 +14,7 @@ tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 VOCABULARY_SIZE = tokenizer.vocab_size
 
 
-def inpute_tokenization(batch, num_tokens=32):
+def inpute_tokenization(batch, num_tokens=NUM_TOKENS):
     # process_data_to_model_inputs
     inputs = tokenizer([segment['translation']['en'] for segment in batch],
                        padding="max_length", truncation=True, max_length=num_tokens, return_tensors="pt").to(DEVICE)
@@ -36,5 +37,5 @@ def inpute_tokenization(batch, num_tokens=32):
     return batch
 
 
-train_dataloader = DataLoader(train_ds, batch_size=3, shuffle=False, collate_fn=inpute_tokenization)
-validation_dataloader = DataLoader(train_ds, batch_size=3, shuffle=False, collate_fn=inpute_tokenization)
+train_dataloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=False, collate_fn=inpute_tokenization)
+validation_dataloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=False, collate_fn=inpute_tokenization)

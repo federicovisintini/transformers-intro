@@ -1,7 +1,8 @@
 from torch import embedding, nn, optim
 
 from src.dataloader import train_dataloader
-from src.model import Transformer, DEVICE
+from src.device import DEVICE
+from src.model import Transformer
 
 model = Transformer(embedding=embedding)
 model.to(DEVICE)
@@ -33,3 +34,5 @@ for epoch in range(2):  # loop over the dataset multiple times
         if i % 2000 == 1999:  # print every 2000 mini-batches
             print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
             running_loss = 0.0
+
+    print('Finished Training')

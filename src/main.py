@@ -1,25 +1,27 @@
-import torch
-
 from src.dataloader import train_dataloader, VOCABULARY_SIZE
 from src.device import DEVICE
-from src.model import Embedding
+from src.model import Embedding, PositionalEncoder
+from src.parameters import TRAIN_NUM_EPOCHS, EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, BATCH_SIZE
 
 if __name__ == '__main__':
-    embedding = Embedding(vocabulary_size=VOCABULARY_SIZE)
+    # embedding
+    embedding = Embedding(vocabulary_size=VOCABULARY_SIZE, embedding_size=EMBEDDING_SIZE)
     embedding.to(DEVICE)
 
-    for epoch in range(1):
+    # positional encoder
+    pos_encoder = PositionalEncoder(
+        vocabulary_size=VOCABULARY_SIZE,
+        embedding_size=EMBEDDING_SIZE,
+        num_tokens=NUM_TOKENS,
+        positional_encoding_scalar=POSITIONAL_ENCODING_SCALAR,
+        batch_size=BATCH_SIZE
+    )
+    pos_encoder.to(DEVICE)
 
-        running_loss = 0.0
-        for i, batch in enumerate(train_dataloader, 0):
-            # get the inputs; data is a list of [inputs, labels]
-            x = embedding(batch)
-            print(x.size())  # 3, 32, 512
+    i, batch = next(enumerate(train_dataloader))
 
-            y = torch.sum(x, dim=2)
-            print(y.size())
-            print(y)
+    embedded_tokens = embedding(batch)
+    print(embedded_tokens[0])  # 3, 32, 512
 
-            break
-
-    print('Finished Training')
+    positional_encoded_tokens = pos_encoder(embedded_tokens)
+    print(positional_encoded_tokens[0])  # 3, 32, 512
