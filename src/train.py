@@ -2,7 +2,7 @@ from torch import embedding, nn, optim
 
 from src.dataloader import train_dataloader
 from src.device import DEVICE
-from src.model import Transformer
+from src.model.transformer import Transformer
 
 model = Transformer(embedding=embedding)
 model.to(DEVICE)

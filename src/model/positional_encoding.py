@@ -1,24 +1,9 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 from src.device import DEVICE
 
 POSITIONAL_ENCODING_COEFFICIENTS = 300
-
-
-class Embedding(nn.Module):
-    def __init__(self, vocabulary_size, embedding_size):
-        super().__init__()
-        self.vocabulary_size = vocabulary_size
-        self.embedding_size = embedding_size
-
-        self.layer = nn.Linear(vocabulary_size, embedding_size)
-
-    def forward(self, batch):
-        x = batch['input_ids']
-        one_hot_encoded_x = F.one_hot(x, num_classes=self.vocabulary_size).float()
-        return self.layer(one_hot_encoded_x)
 
 
 class PositionalEncoder(nn.Module):
@@ -59,20 +44,3 @@ class PositionalEncoder(nn.Module):
     def to(self, *args, **kwargs):
         super().to(*args, **kwargs)
         self.device = args[0]
-
-
-class Transformer(nn.Module):
-    def __init__(self, embedding):
-        super().__init__()
-        self.embedding = embedding
-
-        self.layer1 = nn.Linear(self.embedding.embedding_size, 32)
-        self.fn1 = nn.ReLU()
-        self.layer2 = nn.Linear(32, 4)
-        self.fn2 = nn.Softmax()
-
-    def forward(self, token):
-        embedded_x = self.embedding(token)
-
-        out1 = self.fn1(self.layer1(embedded_x))
-        return self.fn2(self.layer2(out1))
