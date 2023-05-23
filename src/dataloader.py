@@ -2,18 +2,23 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizerFast
 
+from src.device import DEVICE
+
 train_ds = load_dataset("wmt14", 'de-en', split="train").with_format("torch")
 validation_ds = load_dataset("wmt14", 'de-en', split="validation").with_format("torch")
 
 tokenizer = PreTrainedTokenizerFast.from_pretrained("bert-base-multilingual-cased")
 tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
+VOCABULARY_SIZE = tokenizer.vocab_size
 
-def process_data_to_model_inputs(batch, num_tokens=32):
+
+def inpute_tokenization(batch, num_tokens=32):
+    # process_data_to_model_inputs
     inputs = tokenizer([segment['translation']['en'] for segment in batch],
-                       padding="max_length", truncation=True, max_length=num_tokens)
+                       padding="max_length", truncation=True, max_length=num_tokens, return_tensors="pt").to(DEVICE)
     outputs = tokenizer([segment['translation']['de'] for segment in batch],
-                        padding="max_length", truncation=True, max_length=num_tokens)
+                        padding="max_length", truncation=True, max_length=num_tokens, return_tensors="pt").to(DEVICE)
 
     batch = {}
 
@@ -21,7 +26,7 @@ def process_data_to_model_inputs(batch, num_tokens=32):
     batch["input_attention_mask"] = inputs.attention_mask
     batch["output_ids"] = outputs.input_ids
     batch["output_attention_mask"] = outputs.attention_mask
-    batch["labels"] = outputs.input_ids.copy()
+    batch["labels"] = outputs.input_ids
 
     # because BERT automatically shifts the labels,
     # the labels correspond exactly to `decoder_input_ids`.
@@ -31,9 +36,5 @@ def process_data_to_model_inputs(batch, num_tokens=32):
     return batch
 
 
-train_dataloader = DataLoader(train_ds, batch_size=3, shuffle=False, collate_fn=process_data_to_model_inputs)
-validation_dataloader = DataLoader(train_ds, batch_size=3, shuffle=False, collate_fn=process_data_to_model_inputs)
-
-for batch in train_dataloader:
-    print(batch)
-    break
+train_dataloader = DataLoader(train_ds, batch_size=3, shuffle=False, collate_fn=inpute_tokenization)
+validation_dataloader = DataLoader(train_ds, batch_size=3, shuffle=False, collate_fn=inpute_tokenization)
