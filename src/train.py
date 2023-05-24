@@ -1,11 +1,19 @@
-from torch import embedding, nn, optim
+from torch import nn, optim
 
-from src.dataloader import train_dataloader
+from src.dataloader import train_dataloader, VOCABULARY_SIZE
 from src.device import DEVICE
-from src.model.transformer import Transformer
+from src.model import init_transformer
+from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, BATCH_SIZE
 
-model = Transformer(embedding=embedding)
-model.to(DEVICE)
+model = init_transformer(
+    vocabulary_size=VOCABULARY_SIZE,
+    embedding_size=EMBEDDING_SIZE,
+    num_tokens=NUM_TOKENS,
+    positional_encoding_scalar=POSITIONAL_ENCODING_SCALAR,
+    num_heads=NUM_HEADS,
+    batch_size=BATCH_SIZE,
+    device=DEVICE
+)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
@@ -13,7 +21,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 for epoch in range(2):  # loop over the dataset multiple times
 
     running_loss = 0.0
-    for i, batch in enumerate(train_dataloader, 0):
+    for i, batch in enumerate(train_dataloader):
 
         print(model(batch))
 

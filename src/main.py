@@ -1,4 +1,6 @@
-from src.dataloader import train_dataloader, VOCABULARY_SIZE
+import torch
+
+from src.dataloader import tokenizer, train_dataloader, VOCABULARY_SIZE
 from src.device import DEVICE
 from src.model import init_transformer
 
@@ -20,5 +22,9 @@ if __name__ == '__main__':
     i, batch = next(enumerate(train_dataloader))
 
     z = transformer(batch)
+    print("transformer forward:", z.size())
 
-    print(z.size())
+    tokens = torch.argmax(z.to("cpu"), dim=1)
+    print("most probable tokens:", tokens)
+
+    print(tokenizer.batch_decode(tokens))

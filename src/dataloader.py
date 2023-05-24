@@ -14,7 +14,7 @@ tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 VOCABULARY_SIZE = tokenizer.vocab_size
 
 
-def inpute_tokenization(batch, num_tokens=NUM_TOKENS):
+def input_tokenization(batch, num_tokens=NUM_TOKENS):
     # process_data_to_model_inputs
     inputs = tokenizer([segment['translation']['en'] for segment in batch],
                        padding="max_length", truncation=True, max_length=num_tokens, return_tensors="pt").to(DEVICE)
@@ -37,5 +37,5 @@ def inpute_tokenization(batch, num_tokens=NUM_TOKENS):
     return batch
 
 
-train_dataloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=False, collate_fn=inpute_tokenization)
-validation_dataloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=False, collate_fn=inpute_tokenization)
+train_dataloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=False, collate_fn=input_tokenization)
+validation_dataloader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=False, collate_fn=input_tokenization)
