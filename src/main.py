@@ -1,5 +1,6 @@
 from src.dataloader import train_dataloader, VOCABULARY_SIZE
 from src.device import DEVICE
+from src.model.decoder import Decoder
 from src.model.encoder import Encoder
 from src.model.positional_encoder import PositionalEncoder
 from src.model.embedding import Embedding
@@ -31,21 +32,31 @@ if __name__ == '__main__':
         ).to(DEVICE) for _ in range(6)
     ]
 
-    tranformer = Transformer(embedding, pos_encoder, encoders)
+    # decoder
+    decoders = [
+        Decoder(
+            embedding_size=EMBEDDING_SIZE,
+            num_tokens=NUM_TOKENS,
+            batch_size=BATCH_SIZE,
+            num_heads=NUM_HEADS
+        ).to(DEVICE) for _ in range(6)
+    ]
 
-    print(tranformer)
+    # transformer
+    transformer = Transformer(
+        embedding=embedding,
+        positional_encoder=pos_encoder,
+        encoders=encoders,
+        decoders=decoders,
+        embedding_size=EMBEDDING_SIZE,
+        vocabulary_size=VOCABULARY_SIZE
+    )
+
+    print(transformer)
 
     i, batch = next(enumerate(train_dataloader))
 
-    z = tranformer(batch)
+    z = transformer(batch)
+
     print()
     print(z.size())
-
-    # embedded_tokens = embedding(batch)
-    # print(embedded_tokens.size())  # 3, 32, 512
-    #
-    # positional_encoded_tokens = pos_encoder(embedded_tokens)
-    # print(positional_encoded_tokens.size())  # 3, 32, 512
-    #
-    # z = encoder(positional_encoded_tokens)
-    # print(z.size())
