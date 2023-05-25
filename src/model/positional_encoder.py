@@ -1,9 +1,7 @@
 import torch
 from torch import nn
 
-from src.device import DEVICE
-
-POSITIONAL_ENCODING_COEFFICIENTS = 300
+from src.parameters import POSITIONAL_ENCODING_COEFFICIENTS
 
 
 class PositionalEncoder(nn.Module):
@@ -18,7 +16,6 @@ class PositionalEncoder(nn.Module):
         self.positional_encoding_scalar = positional_encoding_scalar
         self.batch_size = batch_size
 
-        self.device = None
         self.positional_encoding_vector = nn.Parameter(
             self.compute_positional_encoding_vector(), requires_grad=False)
 
@@ -37,14 +34,7 @@ class PositionalEncoder(nn.Module):
         return data.repeat(self.batch_size, 1, 1)
 
     def forward(self, embedded_token):
-        if self.device:
-            return embedded_token + self.positional_encoding_vector.to(DEVICE) / POSITIONAL_ENCODING_COEFFICIENTS
-
         return embedded_token + self.positional_encoding_vector / POSITIONAL_ENCODING_COEFFICIENTS
-
-    def to(self, *args, **kwargs):
-        super().to(*args, **kwargs)
-        self.device = args[0]
 
     def extra_repr(self) -> str:
         named_modules = set()

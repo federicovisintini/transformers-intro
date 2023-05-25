@@ -10,19 +10,26 @@ class Coder(nn.Module):
         super().__init__()
         assert embedding_size % num_heads == 0
 
+        # parameters
         self.embedding_size = embedding_size
         self.num_tokens = num_tokens
         self.batch_size = batch_size
         self.num_heads = num_heads
         self.head_feature = self.embedding_size // self.num_heads
+        self.dim_model = embedding_size
         self.qkv_matrix_dim = (num_heads, embedding_size, embedding_size // num_heads)
 
+        # self attention layer
         self.q_matrix = nn.Parameter(torch.randn(*self.qkv_matrix_dim), requires_grad=True)
         self.k_matrix = nn.Parameter(torch.randn(*self.qkv_matrix_dim), requires_grad=True)
         self.v_matrix = nn.Parameter(torch.randn(*self.qkv_matrix_dim), requires_grad=True)
 
         self.feature_reduction_matrix = nn.Parameter(
-            torch.randn(batch_size, embedding_size, 512), requires_grad=True)
+            torch.randn(batch_size, embedding_size, self.dim_model), requires_grad=True)
+
+        # feed forward layer
+        self.feed_forward_layer = nn.Linear(self.dim_model, self.embedding_size)
+        self.activation_function = nn.ReLU()
 
     def get_qkv(self, x, matrix):
         """qkv stands for q, k or v
@@ -64,6 +71,10 @@ class Coder(nn.Module):
         z = self.qkv_product(q, k, v)
 
         return torch.bmm(z, self.feature_reduction_matrix)  # 3, 32, 512
+
+    def feed_forward(self, x):
+        z = self.feed_forward_layer(x)
+        return self.activation_function(z)
 
     def extra_repr(self) -> str:
         named_modules = set()
