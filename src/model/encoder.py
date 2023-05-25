@@ -14,5 +14,6 @@ class Encoder(Coder):
         z = self.self_attention(x)
         z1 = self.layer_norm_1(x + z)
 
+        # TODO feed forward must be different from different words (# num tokens)
         z2 = self.feed_forward(z1)
         return self.layer_norm_2(z1 + z2)
