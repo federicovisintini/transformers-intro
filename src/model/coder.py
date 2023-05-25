@@ -8,7 +8,8 @@ from torch.nn import functional as F
 class Coder(nn.Module):
     def __init__(self, embedding_size, num_tokens, batch_size, num_heads):
         super().__init__()
-        assert embedding_size % num_heads == 0
+        assert embedding_size % num_heads == 0,\
+            "EMBEDDING_SIZE must be a multiple of NUM_HEADS (multi-head attention)"
 
         # parameters
         self.embedding_size = embedding_size

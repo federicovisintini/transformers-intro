@@ -8,7 +8,7 @@ class PositionalEncoder(nn.Module):
     def __init__(self, vocabulary_size, embedding_size, num_tokens, positional_encoding_scalar, batch_size):
         super().__init__()
 
-        assert embedding_size % 2 == 0
+        assert embedding_size % 2 == 0, "EMBEDDING_SIZE must be even (positional encoder)"
 
         self.vocabulary_size = vocabulary_size
         self.embedding_size = embedding_size
