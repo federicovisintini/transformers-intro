@@ -1,9 +1,10 @@
-from torch import nn, optim
+from torch import optim
 
 from src.dataloader import train_dataloader, VOCABULARY_SIZE
 from src.device import DEVICE
 from src.model import init_transformer
-from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, BATCH_SIZE
+from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, BATCH_SIZE, \
+    TRAIN_NUM_EPOCHS
 
 model = init_transformer(
     vocabulary_size=VOCABULARY_SIZE,
@@ -15,15 +16,29 @@ model = init_transformer(
     device=DEVICE
 )
 
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9)
 
-for epoch in range(2):  # loop over the dataset multiple times
+
+def lr_rate(step_num, d_model, factor, warmup_steps):
+    step_num = max(1, step_num)
+    return factor * (
+        d_model ** (-0.5) * min(step_num ** (-0.5), step_num * warmup_steps ** (-1.5))
+    )
+
+
+lr_scheduler = optim.lr_scheduler.LambdaLR(
+    optimizer=optimizer,
+    lr_lambda=lambda step_num: lr_rate(
+        step_num, d_model=512, factor=1, warmup_steps=4000
+    ),
+)
+
+for epoch in range(TRAIN_NUM_EPOCHS):  # loop over the dataset multiple times
 
     running_loss = 0.0
     for i, batch in enumerate(train_dataloader):
 
-        print(model(batch))
+        # print(model(batch))
 
         inputs = batch['translation']['de']
         labels = batch['translation']['en']
