@@ -17,7 +17,7 @@ if __name__ == '__main__':
         device=DEVICE
     )
 
-    print(transformer)
+    # print(transformer)
 
     i, batch = next(enumerate(train_dataloader))
 

@@ -79,9 +79,12 @@ class Transformer(nn.Module):
         z1 = self.feed_forward_layer2(x1)
         return self.softmax(z1)
 
-    def forward(self, input_tokens):
+    def forward(self, batch):
+        input_token_ids = batch['input_ids']
+        input_attention_mask = batch['input_attention_mask']
+
         # encoder side
-        embedded_tokens = self.embedding(input_tokens)
+        embedded_tokens = self.embedding(input_token_ids)
         x = self.positional_encoder(embedded_tokens)
 
         for i, encoder in enumerate(self.encoders):
@@ -95,8 +98,8 @@ class Transformer(nn.Module):
         output_tokens = torch.zeros(self.batch_size, self.num_tokens, dtype=torch.int64).to(self.device)
 
         for j in range(self.num_tokens):
-            batch_output = {'input_ids': output_tokens}
-            embedded_tokens = self.embedding(batch_output)
+            # batch_output = {'input_ids': output_tokens}
+            embedded_tokens = self.embedding(output_tokens)
             x = self.positional_encoder(embedded_tokens)
 
             for i, decoder in enumerate(self.decoders):

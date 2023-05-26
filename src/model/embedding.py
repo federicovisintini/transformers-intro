@@ -10,7 +10,6 @@ class Embedding(nn.Module):
 
         self.layer = nn.Linear(vocabulary_size, embedding_size)
 
-    def forward(self, batch):
-        x = batch['input_ids']
-        one_hot_encoded_x = F.one_hot(x, num_classes=self.vocabulary_size).float()
+    def forward(self, input_token_ids):
+        one_hot_encoded_x = F.one_hot(input_token_ids, num_classes=self.vocabulary_size).float()
         return self.layer(one_hot_encoded_x)
