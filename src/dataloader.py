@@ -36,8 +36,8 @@ def input_tokenization(batch, num_tokens=NUM_TOKENS):
         return_tensors="pt"
     ).to(DEVICE)
 
-    inputs_attention_mask = reshape_attention_mask(inputs.attention_mask, num_heads=NUM_HEADS)
-    outputs_attention_mask = reshape_attention_mask(outputs.attention_mask, num_heads=NUM_HEADS)
+    inputs_attention_mask = reshape_attention_mask(inputs.attention_mask, num_heads=NUM_HEADS).to(DEVICE)
+    outputs_attention_mask = reshape_attention_mask(outputs.attention_mask, num_heads=NUM_HEADS).to(DEVICE)
 
     batch = {
         "input_ids": inputs.input_ids,

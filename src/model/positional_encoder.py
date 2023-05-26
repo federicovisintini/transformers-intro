@@ -34,7 +34,7 @@ class PositionalEncoder(nn.Module):
         return data.repeat(self.batch_size, 1, 1)
 
     def forward(self, embedded_token):
-        return embedded_token + self.positional_encoding_vector / POSITIONAL_ENCODING_COEFFICIENTS
+        return embedded_token * POSITIONAL_ENCODING_COEFFICIENTS + self.positional_encoding_vector
 
     def extra_repr(self) -> str:
         named_modules = set()

@@ -21,6 +21,7 @@ class Transformer(nn.Module):
     ):
         super().__init__()
         self.num_tokens = num_tokens
+        self.num_heads = num_heads
         self.hidden_dim_final_layer = 512  # this is arbitrary, does not need to be embedding_size
 
         self.batch_size = batch_size
@@ -81,29 +82,31 @@ class Transformer(nn.Module):
 
     def forward(self, batch):
         input_token_ids = batch['input_ids']
-        attention_mask = batch['input_attention_mask']
+        input_attention_mask = batch['input_attention_mask']
 
         # encoder side
         embedded_tokens = self.embedding(input_token_ids)
         x = self.positional_encoder(embedded_tokens)
 
         for i, encoder in enumerate(self.encoders):
-            x = encoder(x, attention_mask)  # 3, 32, 512
+            x = encoder(x, input_attention_mask)  # 3, 32, 512
 
         k = self.encoders[-1].get_qkv(x, self.k_matrix)
         v = self.encoders[-1].get_qkv(x, self.v_matrix)
 
         # decoder side
-        # TODO missing attention mask on past values
+        # TODO is attention mask on past values correct?
+        # TODO transformer should stop when generates [SEP]
         output_tokens = torch.zeros(self.batch_size, self.num_tokens, dtype=torch.int64).to(self.device)
+        decoder_attention_mask = torch.zeros(self.batch_size * self.num_heads, self.num_tokens, self.num_tokens)
 
         for j in range(self.num_tokens):
-            # batch_output = {'input_ids': output_tokens}
             embedded_tokens = self.embedding(output_tokens)
             x = self.positional_encoder(embedded_tokens)
+            decoder_attention_mask[:, :j, :j] = 1
 
             for i, decoder in enumerate(self.decoders):
-                x = decoder(x, k, v)
+                x = decoder(x, k, v, input_attention_mask, decoder_attention_mask)
 
             z = self.final_layer(x)
             tokens = torch.argmax(z.to("cpu"), dim=1)  # one token per batch

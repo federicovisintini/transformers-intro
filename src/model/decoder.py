@@ -13,18 +13,18 @@ class Decoder(Coder):
         self.layer_norm_2 = nn.LayerNorm([num_tokens, embedding_size])
         self.layer_norm_3 = nn.LayerNorm([num_tokens, embedding_size])
 
-    def encoder_decoder_attention(self, x, k, v):
+    def encoder_decoder_attention(self, x, k, v, encoder_attention_mask):
         q = self.get_qkv(x, self.q_matrix_enc_dec_attention)
 
-        z = self.qkv_product(q, k, v)
+        z = self.qkv_product(q, k, v, encoder_attention_mask)
 
         return torch.bmm(z, self.feature_reduction_matrix)  # 3, 32, 512
 
-    def forward(self, x, k_from_encoder, v_from_encoder):
-        z = self.self_attention(x, None)
+    def forward(self, x, k_from_encoder, v_from_encoder, encoder_attention_mask, decoder_attention_mask):
+        z = self.self_attention(x, decoder_attention_mask)
         z1 = self.layer_norm_1(x + z)
 
-        z2 = self.encoder_decoder_attention(z1, k_from_encoder, v_from_encoder)
+        z2 = self.encoder_decoder_attention(z1, k_from_encoder, v_from_encoder, encoder_attention_mask)
         z3 = self.layer_norm_2(z1 + z2)
 
         z4 = self.feed_forward(z3)
