@@ -1,16 +1,17 @@
 from src.dataloader import tokenizer, train_dataloader, VOCABULARY_SIZE
 from src.device import DEVICE
-from src.model import init_transformer
+from src.model import Transformer
 
-from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, BATCH_SIZE, NUM_HEADS
+from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, BATCH_SIZE, NUM_HEADS, NUM_ENCODERS
 
 if __name__ == '__main__':
-    transformer = init_transformer(
+    transformer = Transformer(
         vocabulary_size=VOCABULARY_SIZE,
         embedding_size=EMBEDDING_SIZE,
         num_tokens=NUM_TOKENS,
         positional_encoding_scalar=POSITIONAL_ENCODING_SCALAR,
         num_heads=NUM_HEADS,
+        num_encoders=NUM_ENCODERS,
         batch_size=BATCH_SIZE,
         device=DEVICE
     )

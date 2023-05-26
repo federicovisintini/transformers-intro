@@ -49,13 +49,17 @@ class Coder(nn.Module):
 
         return qkv  # 24, 32, 64
 
-    def qkv_product(self, q, k, v):
+    def qkv_product(self, q, k, v, mask=None):
         """Takes q, k, v and returns z
 
         This is used both in self_attention and in encoder_decoder_attention.
         """
         kt = torch.transpose(k, 1, 2)  # 24, 64, 32
         z = torch.bmm(q, kt)
+
+        if mask is not None:
+            z = z.masked_fill_(mask == 0, -1e9)
+
         z = F.softmax(torch.div(z, math.sqrt(self.head_feature)), dim=2)  # 24, 32, 32
         z = torch.bmm(z, v)  # 24, 32, 64
         z = torch.reshape(z, (self.batch_size, self.num_heads, self.num_tokens, self.head_feature))  # 3, 8, 32, 64

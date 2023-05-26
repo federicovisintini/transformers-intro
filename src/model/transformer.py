@@ -1,43 +1,74 @@
-import typing as t
-
 import torch
 from torch import nn
 
-from src.device import DEVICE
 from src.model.decoder import Decoder
 from src.model.embedding import Embedding
 from src.model.encoder import Encoder
 from src.model.positional_encoder import PositionalEncoder
-from src.parameters import BATCH_SIZE
 
 
 class Transformer(nn.Module):
     def __init__(
             self,
-            embedding: Embedding,
-            positional_encoder: PositionalEncoder,
-            encoders: t.List[Encoder],
-            decoders: t.List[Decoder],
+            vocabulary_size: int,
             embedding_size: int,
             num_tokens: int,
-            vocabulary_size: int,
+            positional_encoding_scalar: int | float,
+            num_heads: int,
+            num_encoders: int,
+            batch_size: int,
+            device: str | torch.device
     ):
         super().__init__()
-        self.embedding = embedding
-        self.positional_encoder = positional_encoder
-        self.encoders = nn.ModuleList(encoders)
-        self.decoders = nn.ModuleList(decoders)
+        self.num_tokens = num_tokens
         self.hidden_dim_final_layer = 512  # this is arbitrary, does not need to be embedding_size
 
-        self.num_tokens = self.encoders[0].num_tokens
-        self.qkv_matrix_dim = self.encoders[0].qkv_matrix_dim
-        self.k_matrix = nn.Parameter(torch.randn(*self.qkv_matrix_dim), requires_grad=True)
-        self.v_matrix = nn.Parameter(torch.randn(*self.qkv_matrix_dim), requires_grad=True)
+        self.batch_size = batch_size
+        self.device = device
 
+        self.embedding = Embedding(
+            vocabulary_size=vocabulary_size,
+            embedding_size=embedding_size
+        )
+
+        self.positional_encoder = PositionalEncoder(
+            vocabulary_size=vocabulary_size,
+            embedding_size=embedding_size,
+            num_tokens=num_tokens,
+            positional_encoding_scalar=positional_encoding_scalar,
+            batch_size=batch_size
+        )
+
+        self.encoders = nn.ModuleList([
+            Encoder(
+                embedding_size=embedding_size,
+                num_tokens=num_tokens,
+                batch_size=batch_size,
+                num_heads=num_heads
+            ) for _ in range(num_encoders)
+        ])
+
+        # encoder-decoder-attention
+        qkv_matrix_dim = (num_heads, embedding_size, embedding_size // num_heads)
+        self.k_matrix = nn.Parameter(torch.randn(*qkv_matrix_dim), requires_grad=True)
+        self.v_matrix = nn.Parameter(torch.randn(*qkv_matrix_dim), requires_grad=True)
+
+        self.decoders = nn.ModuleList([
+            Decoder(
+                embedding_size=embedding_size,
+                num_tokens=num_tokens,
+                batch_size=batch_size,
+                num_heads=num_heads
+            ) for _ in range(num_encoders)
+        ])
+
+        # final layer
         self.feed_forward_layer1 = nn.Linear(embedding_size * num_tokens, self.hidden_dim_final_layer)
         self.activation_function = nn.ReLU()
         self.feed_forward_layer2 = nn.Linear(self.hidden_dim_final_layer, vocabulary_size)
         self.softmax = nn.Softmax(dim=1)
+
+        self.to(self.device)
 
     def final_layer(self, x):
         x = torch.flatten(x, start_dim=1)
@@ -61,7 +92,7 @@ class Transformer(nn.Module):
 
         # decoder side
         # TODO missing attention mask on past values
-        output_tokens = torch.zeros(BATCH_SIZE, self.num_tokens, dtype=torch.int64).to(DEVICE)
+        output_tokens = torch.zeros(self.batch_size, self.num_tokens, dtype=torch.int64).to(self.device)
 
         for j in range(self.num_tokens):
             batch_output = {'input_ids': output_tokens}
