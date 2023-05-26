@@ -1,9 +1,21 @@
+import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 
 from src.device import DEVICE
-from src.parameters import BATCH_SIZE, NUM_TOKENS
+from src.parameters import BATCH_SIZE, NUM_TOKENS, NUM_HEADS
 from src.tokenizer import tokenizer
+
+
+def reshape_attention_mask(attention_mask, num_heads):
+    """
+    :param attention_mask: with shape 3, of numbers up to 32. E.g. [7, 32, 32]
+    :return: attention_mask (of 0s and 1s) with shape 24, 32, 32
+    """
+    batch_size, num_tokens = attention_mask.size()
+    single_head_attention_mask = torch.bmm(attention_mask.unsqueeze(-1), attention_mask.unsqueeze(-2))  # 3, 32, 32
+    multi_head_attention_mask = single_head_attention_mask.unsqueeze(1).repeat(1, num_heads, 1, 1)  # 3, 8, 32, 32
+    return multi_head_attention_mask.reshape(batch_size * num_heads, num_tokens, num_tokens)  # 24, 32, 32
 
 
 def input_tokenization(batch, num_tokens=NUM_TOKENS):
@@ -24,11 +36,14 @@ def input_tokenization(batch, num_tokens=NUM_TOKENS):
         return_tensors="pt"
     ).to(DEVICE)
 
+    inputs_attention_mask = reshape_attention_mask(inputs.attention_mask, num_heads=NUM_HEADS)
+    outputs_attention_mask = reshape_attention_mask(outputs.attention_mask, num_heads=NUM_HEADS)
+
     batch = {
         "input_ids": inputs.input_ids,
-        "input_attention_mask": inputs.attention_mask,
+        "input_attention_mask": inputs_attention_mask,
         "output_ids": outputs.input_ids,
-        "output_attention_mask": outputs.attention_mask,
+        "output_attention_len": outputs_attention_mask,
         "labels": outputs.input_ids
     }
 

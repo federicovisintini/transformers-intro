@@ -21,7 +21,7 @@ class Decoder(Coder):
         return torch.bmm(z, self.feature_reduction_matrix)  # 3, 32, 512
 
     def forward(self, x, k_from_encoder, v_from_encoder):
-        z = self.self_attention(x)
+        z = self.self_attention(x, None)
         z1 = self.layer_norm_1(x + z)
 
         z2 = self.encoder_decoder_attention(z1, k_from_encoder, v_from_encoder)

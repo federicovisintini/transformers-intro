@@ -81,14 +81,14 @@ class Transformer(nn.Module):
 
     def forward(self, batch):
         input_token_ids = batch['input_ids']
-        input_attention_mask = batch['input_attention_mask']
+        attention_mask = batch['input_attention_mask']
 
         # encoder side
         embedded_tokens = self.embedding(input_token_ids)
         x = self.positional_encoder(embedded_tokens)
 
         for i, encoder in enumerate(self.encoders):
-            x = encoder(x)  # 3, 32, 512
+            x = encoder(x, attention_mask)  # 3, 32, 512
 
         k = self.encoders[-1].get_qkv(x, self.k_matrix)
         v = self.encoders[-1].get_qkv(x, self.v_matrix)

@@ -9,4 +9,6 @@ DEVICE = (
     else "cpu"
 )
 
+DEVICE = torch.device("cpu")
+
 print(f"Using {DEVICE} device")

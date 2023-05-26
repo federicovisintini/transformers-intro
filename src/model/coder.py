@@ -1,5 +1,3 @@
-import math
-
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -60,7 +58,7 @@ class Coder(nn.Module):
         if mask is not None:
             z = z.masked_fill_(mask == 0, -1e9)
 
-        z = F.softmax(torch.div(z, math.sqrt(self.head_feature)), dim=2)  # 24, 32, 32
+        z = F.softmax(torch.div(z, self.head_feature ** 0.5), dim=-1)  # 24, 32, 32
         z = torch.bmm(z, v)  # 24, 32, 64
         z = torch.reshape(z, (self.batch_size, self.num_heads, self.num_tokens, self.head_feature))  # 3, 8, 32, 64
         z = torch.swapaxes(z, 1, 2)  # 3, 32, 8, 64
@@ -68,12 +66,12 @@ class Coder(nn.Module):
 
         return z
 
-    def self_attention(self, x):
+    def self_attention(self, x, attention_mask):
         q = self.get_qkv(x, self.q_matrix)
         k = self.get_qkv(x, self.k_matrix)
         v = self.get_qkv(x, self.v_matrix)
 
-        z = self.qkv_product(q, k, v)
+        z = self.qkv_product(q, k, v, attention_mask)
 
         return torch.bmm(z, self.feature_reduction_matrix)  # 3, 32, 512
 

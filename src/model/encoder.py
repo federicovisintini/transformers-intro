@@ -10,8 +10,8 @@ class Encoder(Coder):
         self.layer_norm_1 = nn.LayerNorm([num_tokens, embedding_size])
         self.layer_norm_2 = nn.LayerNorm([num_tokens, embedding_size])
 
-    def forward(self, x):
-        z = self.self_attention(x)
+    def forward(self, x, attention_mask):
+        z = self.self_attention(x, attention_mask)
         z1 = self.layer_norm_1(x + z)
 
         # TODO feed forward must be different from different words (# num tokens) ???
