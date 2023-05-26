@@ -1,8 +1,9 @@
-from src.dataloader import tokenizer, train_dataloader, VOCABULARY_SIZE
+from src.dataloader import train_dataloader
 from src.device import DEVICE
 from src.model import Transformer
 
 from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, BATCH_SIZE, NUM_HEADS, NUM_ENCODERS
+from src.tokenizer import VOCABULARY_SIZE, tokenizer
 
 if __name__ == '__main__':
     transformer = Transformer(
@@ -19,6 +20,8 @@ if __name__ == '__main__':
     print(transformer)
 
     i, batch = next(enumerate(train_dataloader))
+
+    # print(batch)
 
     output = transformer(batch)
     print("transformer output size:", output.size(), "\n")

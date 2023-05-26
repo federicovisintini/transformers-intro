@@ -103,7 +103,7 @@ class Transformer(nn.Module):
                 x = decoder(x, k, v)
 
             z = self.final_layer(x)
-            tokens = torch.argmax(z.to("cpu"), dim=1)
+            tokens = torch.argmax(z.to("cpu"), dim=1)  # one token per batch
 
             output_tokens[:, j] = tokens
 
