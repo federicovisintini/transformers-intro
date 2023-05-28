@@ -3,7 +3,7 @@ from torch import optim, nn
 from src.dataloader.dataloader import train_dataloader, validation_dataloader
 from src.dataloader.tokenizer import VOCABULARY_SIZE
 from src.model import Transformer
-from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, BATCH_SIZE, \
+from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, \
     TRAIN_NUM_EPOCHS, NUM_ENCODERS
 from src.trainer.trainer import Trainer
 from src.utils.device import DEVICE
@@ -22,7 +22,6 @@ if __name__ == '__main__':
         positional_encoding_scalar=POSITIONAL_ENCODING_SCALAR,
         num_heads=NUM_HEADS,
         num_encoders=NUM_ENCODERS,
-        batch_size=BATCH_SIZE,
         device=DEVICE
     )
 
@@ -33,7 +32,7 @@ if __name__ == '__main__':
     lr_scheduler = optim.lr_scheduler.LambdaLR(
         optimizer=optimizer,
         lr_lambda=lambda step_num: lr_rate(
-            step_num, d_model=512, factor=1, warmup_steps=4000
+            step_num, d_model=512, factor=1e5, warmup_steps=4000
         ),
     )
 

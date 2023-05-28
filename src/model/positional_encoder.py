@@ -1,22 +1,18 @@
 import torch
 from torch import nn
 
-from src.parameters import POSITIONAL_ENCODING_COEFFICIENTS
-
 
 class PositionalEncoder(nn.Module):
-    def __init__(self, vocabulary_size, embedding_size, num_tokens, positional_encoding_scalar):
+    def __init__(self, embedding_size, num_tokens, positional_encoding_scalar):
         super().__init__()
 
         assert embedding_size % 2 == 0, "EMBEDDING_SIZE must be even (positional encoder)"
 
-        self.vocabulary_size = vocabulary_size
         self.embedding_size = embedding_size
         self.num_tokens = num_tokens
         self.positional_encoding_scalar = positional_encoding_scalar
 
-        self.positional_encoding_vector = nn.Parameter(
-            self.compute_positional_encoding_vector(), requires_grad=False)
+        self.register_buffer('positional_encoding_vector', self.compute_positional_encoding_vector())
 
     def compute_positional_encoding_vector(self):
         v1 = torch.arange(self.num_tokens)
@@ -31,7 +27,7 @@ class PositionalEncoder(nn.Module):
         return torch.stack([sin, cos], dim=2).view(self.num_tokens, self.embedding_size)
 
     def forward(self, embedded_token):
-        return embedded_token * POSITIONAL_ENCODING_COEFFICIENTS + self.positional_encoding_vector
+        return embedded_token + self.positional_encoding_vector
 
     def extra_repr(self) -> str:
         named_modules = set()

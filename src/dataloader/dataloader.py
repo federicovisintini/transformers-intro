@@ -9,7 +9,7 @@ from src.utils.device import DEVICE
 
 def reshape_attention_mask(attention_mask, num_heads):
     """
-    :param attention_mask: with shape 3, of numbers up to 32. E.g. [7, 32, 32]
+    :param attention_mask: with shape [3, 32], full of 1s and 0s.
     :return: attention_mask (of 0s and 1s) with shape 24, 32, 32
     """
     batch_size, num_tokens = attention_mask.size()
@@ -37,22 +37,14 @@ def input_tokenization(batch, num_tokens=NUM_TOKENS):
     ).to(DEVICE)
 
     inputs_attention_mask = reshape_attention_mask(inputs.attention_mask, num_heads=NUM_HEADS).to(DEVICE)
-    outputs_attention_mask = reshape_attention_mask(outputs.attention_mask, num_heads=NUM_HEADS).to(DEVICE)
-
-    # shifting decoder.input_ids + adding BOS token at the beginning
-    bos_encoding = tokenizer(tokenizer.bos_token)
-    bos_id = bos_encoding.input_ids[1]
-    output_ids = torch.roll(outputs.input_ids, shifts=(0, 1), dims=(0, 1))
-    output_ids[:, 0] = bos_id
-
-    # TODO shall we shift the output attention mask by 1 ?
+    outputs_attention_mask = reshape_attention_mask(outputs.attention_mask[:, :-1], num_heads=NUM_HEADS).to(DEVICE)
 
     batch = {
         "input_ids": inputs.input_ids,
         "input_attention_mask": inputs_attention_mask,
-        "output_ids": output_ids,  # shifted to the right, beginning w BOS token
-        "output_attention_len": outputs_attention_mask,
-        "labels": outputs.input_ids
+        "output_ids": outputs.input_ids[:, :-1],  # we don't pass last input
+        "output_attention_mask": outputs_attention_mask,
+        "labels": outputs.input_ids[:, 1:]  # we expect shifted labels
     }
 
     return batch

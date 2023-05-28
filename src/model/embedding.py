@@ -12,4 +12,4 @@ class Embedding(nn.Module):
 
     def forward(self, input_token_ids):
         one_hot_encoded_x = F.one_hot(input_token_ids, num_classes=self.vocabulary_size).float()
-        return self.layer(one_hot_encoded_x)
+        return self.layer(one_hot_encoded_x) * self.embedding_size ** 0.5

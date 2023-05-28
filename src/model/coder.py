@@ -14,7 +14,6 @@ class Coder(nn.Module):
         self.num_tokens = num_tokens
         self.num_heads = num_heads
         self.head_feature = self.embedding_size // self.num_heads
-        self.dim_model = embedding_size
         self.qkv_matrix_dim = (num_heads, embedding_size, embedding_size // num_heads)
 
         # self attention layer
@@ -23,10 +22,10 @@ class Coder(nn.Module):
         self.v_matrix = nn.Parameter(torch.randn(*self.qkv_matrix_dim), requires_grad=True)
 
         self.feature_reduction_matrix = nn.Parameter(
-            torch.randn(embedding_size, self.dim_model), requires_grad=True)
+            torch.randn(self.embedding_size, self.embedding_size), requires_grad=True)
 
         # feed forward layer
-        self.feed_forward_layer = nn.Linear(self.dim_model, self.embedding_size)
+        self.feed_forward_layer = nn.Linear(self.embedding_size, self.embedding_size)
         self.activation_function = nn.ReLU()
 
     def get_qkv(self, x, matrix):

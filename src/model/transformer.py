@@ -23,15 +23,25 @@ class Transformer(nn.Module):
         self.num_heads = num_heads
         self.device = device
 
-        self.embedding = Embedding(
+        self.input_embedding = Embedding(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size
         )
 
-        self.positional_encoder = PositionalEncoder(
+        self.output_embedding = Embedding(
             vocabulary_size=vocabulary_size,
+            embedding_size=embedding_size
+        )
+
+        self.input_positional_encoder = PositionalEncoder(
             embedding_size=embedding_size,
             num_tokens=num_tokens,
+            positional_encoding_scalar=positional_encoding_scalar,
+        )
+
+        self.output_positional_encoder = PositionalEncoder(
+            embedding_size=embedding_size,
+            num_tokens=num_tokens - 1,
             positional_encoding_scalar=positional_encoding_scalar,
         )
 
@@ -51,7 +61,7 @@ class Transformer(nn.Module):
         self.decoders = nn.ModuleList([
             Decoder(
                 embedding_size=embedding_size,
-                num_tokens=num_tokens,
+                num_tokens=num_tokens - 1,
                 num_heads=num_heads
             ) for _ in range(num_encoders)
         ])
@@ -62,23 +72,32 @@ class Transformer(nn.Module):
 
         self.to(self.device)
 
+    def init_params(self, xavier_initialization=True):
+        if xavier_initialization:
+            for name, p in self.named_parameters():
+                if p.dim() > 1:
+                    nn.init.xavier_uniform_(p)
+
     def final_layer(self, x):
         z = self.feed_forward_layer(x)
         return self.softmax(z)
 
     def forward(self, batch):
+        self.init_params()
+
         # encoder side
         input_token_ids = batch['input_ids']
         input_attention_mask = batch['input_attention_mask']
 
-        embedded_tokens = self.embedding(input_token_ids)
-        x = self.positional_encoder(embedded_tokens)
+        embedded_tokens = self.input_embedding(input_token_ids)
+        x = self.input_positional_encoder(embedded_tokens)
 
         for i, encoder in enumerate(self.encoders):
             x = encoder(x, input_attention_mask)  # 3, 32, 512
 
-        k = self.encoders[-1].get_qkv(x, self.k_matrix)
-        v = self.encoders[-1].get_qkv(x, self.v_matrix)
+        k = self.encoders[-1].get_qkv(x, self.k_matrix)[:, :-1, :]  # 8, 31, 64
+        v = self.encoders[-1].get_qkv(x, self.v_matrix)[:, :-1, :]  # 8, 31, 64
+        input_attention_mask = input_attention_mask[:, :-1, :-1]    # 3, 31, 31
 
         # decoder side
 
@@ -88,18 +107,18 @@ class Transformer(nn.Module):
         # this leads to more stability during training and allows for parallel training
 
         output_token_ids = batch['output_ids']
-        output_attention_mask = batch['input_attention_mask']
+        output_attention_mask = batch['output_attention_mask']
         batch_size = len(output_token_ids)
 
         # triangular_lower: q x kt; the first word only knows itself; the last word knows all of them
         future_attention_mask = torch.tril(
-            torch.ones(batch_size * self.num_heads, self.num_tokens, self.num_tokens, requires_grad=False)
+            torch.ones(batch_size * self.num_heads, self.num_tokens - 1, self.num_tokens - 1, requires_grad=False)
         )
 
         decoder_attention_mask = output_attention_mask * future_attention_mask
 
-        embedded_tokens = self.embedding(output_token_ids)
-        x = self.positional_encoder(embedded_tokens)
+        embedded_tokens = self.output_embedding(output_token_ids)
+        x = self.output_positional_encoder(embedded_tokens)
 
         for i, decoder in enumerate(self.decoders):
             x = decoder(x, k, v, input_attention_mask, decoder_attention_mask)

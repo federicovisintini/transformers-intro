@@ -1,10 +1,11 @@
 import torch
 
-from src.dataloader.dataloader import train_dataloader
-from src.dataloader.tokenizer import VOCABULARY_SIZE, tokenizer
+from src.dataloader import train_dataloader
+from src.dataloader import VOCABULARY_SIZE, tokenizer
 from src.model import Transformer
 from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, NUM_HEADS, NUM_ENCODERS
-from src.utils.device import DEVICE
+from src.utils import count_parameters
+from src.utils import DEVICE
 
 
 # PREDICTIONS
@@ -12,7 +13,7 @@ def predict(model, batch):
     cls_id, sep_id = tokenizer('')['input_ids']
 
     output = [torch.tensor([cls_id], requires_grad=False)]
-    for token_number in range(1, model.num_tokens):
+    for token_number in range(1, model.num_tokens - 1):
         # decoder_attention_mask = torch.zeros(
         #   self.batch_size * self.num_heads, self.num_tokens, self.num_tokens)
 
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     )
 
     # print(transformer)
+    print(f"{count_parameters(transformer) / 1e6:.0f}M parameters")
 
     i, batch = next(enumerate(train_dataloader))
 
