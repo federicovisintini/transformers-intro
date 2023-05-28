@@ -1,4 +1,5 @@
 import torch
+from tqdm import tqdm
 
 from src.dataloader import train_dataloader
 from src.dataloader import VOCABULARY_SIZE, tokenizer
@@ -13,11 +14,14 @@ def predict(model, batch):
     cls_id, sep_id = tokenizer('')['input_ids']
 
     output = [torch.tensor([cls_id], requires_grad=False)]
-    for token_number in range(1, model.num_tokens - 1):
+    for token_number in tqdm(range(1, model.num_tokens - 1)):
         # decoder_attention_mask = torch.zeros(
         #   self.batch_size * self.num_heads, self.num_tokens, self.num_tokens)
+        # TODO set batch['output_ids'], batch['output_attention_mask']
 
-        probas = model(batch)
+        with torch.no_grad():
+            probas = model(batch)
+
         tokens = torch.argmax(probas.to("cpu"), dim=-1)
         next_token = tokens[:, token_number]
         output.append(next_token)

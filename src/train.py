@@ -32,7 +32,7 @@ if __name__ == '__main__':
     lr_scheduler = optim.lr_scheduler.LambdaLR(
         optimizer=optimizer,
         lr_lambda=lambda step_num: lr_rate(
-            step_num, d_model=512, factor=1e5, warmup_steps=4000
+            step_num, d_model=512, factor=1e6, warmup_steps=4000
         ),
     )
 

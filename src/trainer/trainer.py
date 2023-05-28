@@ -28,7 +28,7 @@ class Trainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
 
-        self.log_batch_timeout = 1  # log after N batches
+        self.log_batch_timeout = 10  # log after N batches
 
     def _train_one_epoch(self, epoch_index, tb_writer):
         running_loss = 0.0
