@@ -1,12 +1,12 @@
 from torch import optim, nn
 
-from src.torch_training.dataloader import train_dataloader, validation_dataloader
-from src.torch_training.device import DEVICE
+from src.dataloader.dataloader import train_dataloader, validation_dataloader
+from src.dataloader.tokenizer import VOCABULARY_SIZE
 from src.model import Transformer
 from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, BATCH_SIZE, \
     TRAIN_NUM_EPOCHS, NUM_ENCODERS
-from src.torch_training.tokenizer import VOCABULARY_SIZE
-from src.torch_training.trainer import Trainer
+from src.trainer.trainer import Trainer
+from src.utils.device import DEVICE
 
 
 def lr_rate(step_num, d_model, factor, warmup_steps):

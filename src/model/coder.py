@@ -53,7 +53,7 @@ class Coder(nn.Module):
         This is used both in self_attention and in encoder_decoder_attention.
         """
         kt = torch.transpose(k, 1, 2)  # 24, 64, 32
-        z = torch.bmm(q, kt)
+        z = torch.bmm(q, kt)  # 24, 32, 32
 
         if mask is not None:
             z = z.masked_fill_(mask == 0, -1e9)

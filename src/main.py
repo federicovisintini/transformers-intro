@@ -1,9 +1,10 @@
-from src.torch_training.dataloader import train_dataloader
-from src.torch_training.device import DEVICE
-from src.model import Transformer
+import torch
 
+from src.dataloader.dataloader import train_dataloader
+from src.dataloader.tokenizer import VOCABULARY_SIZE, tokenizer
+from src.model import Transformer
 from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, BATCH_SIZE, NUM_HEADS, NUM_ENCODERS
-from src.torch_training.tokenizer import VOCABULARY_SIZE, tokenizer
+from src.utils.device import DEVICE
 
 if __name__ == '__main__':
     transformer = Transformer(
@@ -21,13 +22,13 @@ if __name__ == '__main__':
 
     i, batch = next(enumerate(train_dataloader))
 
-    # print(batch)
+    probas = transformer(batch)
+    tokens = torch.argmax(probas.to("cpu"), dim=-1)
 
-    output = transformer(batch)
-    print("transformer output size:", output.size(), "\n")
+    print("transformer output tokens size:", tokens.size(), "\n")
 
     for original_sentence, translated_sentence in zip(
-            tokenizer.batch_decode(batch['input_ids']), tokenizer.batch_decode(output)):
+            tokenizer.batch_decode(batch['input_ids']), tokenizer.batch_decode(tokens)):
         print(original_sentence)
         print(translated_sentence)
         print()

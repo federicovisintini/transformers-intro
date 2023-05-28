@@ -1,5 +1,5 @@
-import torch
 import seaborn as sns
+import torch
 from matplotlib import pyplot as plt
 
 from src.parameters import POSITIONAL_ENCODING_SCALAR, EMBEDDING_SIZE, NUM_TOKENS

@@ -22,7 +22,6 @@ class Transformer(nn.Module):
         super().__init__()
         self.num_tokens = num_tokens
         self.num_heads = num_heads
-        self.hidden_dim_final_layer = 512  # this is arbitrary, does not need to be embedding_size
 
         self.batch_size = batch_size
         self.device = device
@@ -64,27 +63,20 @@ class Transformer(nn.Module):
         ])
 
         # final layer
-        self.feed_forward_layer1 = nn.Linear(embedding_size * num_tokens, self.hidden_dim_final_layer)
-        self.activation_function = nn.ReLU()
-        self.feed_forward_layer2 = nn.Linear(self.hidden_dim_final_layer, vocabulary_size)
-        self.softmax = nn.Softmax(dim=1)
+        self.feed_forward_layer = nn.Linear(embedding_size, vocabulary_size)
+        self.softmax = nn.Softmax(dim=-1)
 
         self.to(self.device)
 
     def final_layer(self, x):
-        x = torch.flatten(x, start_dim=1)
-
-        z = self.feed_forward_layer1(x)
-        x1 = self.activation_function(z)
-
-        z1 = self.feed_forward_layer2(x1)
-        return self.softmax(z1)
+        z = self.feed_forward_layer(x)
+        return self.softmax(z)
 
     def forward(self, batch):
+        # encoder side
         input_token_ids = batch['input_ids']
         input_attention_mask = batch['input_attention_mask']
 
-        # encoder side
         embedded_tokens = self.embedding(input_token_ids)
         x = self.positional_encoder(embedded_tokens)
 
@@ -95,22 +87,50 @@ class Transformer(nn.Module):
         v = self.encoders[-1].get_qkv(x, self.v_matrix)
 
         # decoder side
-        # TODO is attention mask on past values correct?
-        # TODO transformer should stop when generates [SEP]
-        output_tokens = torch.zeros(self.batch_size, self.num_tokens, dtype=torch.int64).to(self.device)
-        decoder_attention_mask = torch.zeros(self.batch_size * self.num_heads, self.num_tokens, self.num_tokens)
 
-        for j in range(self.num_tokens):
-            embedded_tokens = self.embedding(output_tokens)
-            x = self.positional_encoder(embedded_tokens)
-            decoder_attention_mask[:, :j, :j] = 1
+        # TRAINING
+        # instead of passing recursively the predicted output,
+        # we pass as decoder-input the true labels and ask to infer the next word
+        # this leads to more stability during training and allows for parallel training
+        output_token_ids = batch['output_ids']
+        output_attention_mask = batch['input_attention_mask']
 
-            for i, decoder in enumerate(self.decoders):
-                x = decoder(x, k, v, input_attention_mask, decoder_attention_mask)
+        # triangular_lower: q x kt; the first word only knows itself; the last word knows all of them
+        future_attention_mask = torch.tril(
+            torch.ones(self.batch_size * self.num_heads, self.num_tokens, self.num_tokens, requires_grad=False)
+        )
 
-            z = self.final_layer(x)
-            tokens = torch.argmax(z.to("cpu"), dim=1)  # one token per batch
+        decoder_attention_mask = output_attention_mask * future_attention_mask
 
-            output_tokens[:, j] = tokens
+        embedded_tokens = self.embedding(output_token_ids)
+        x = self.positional_encoder(embedded_tokens)
 
-        return output_tokens
+        for i, decoder in enumerate(self.decoders):
+            x = decoder(x, k, v, input_attention_mask, decoder_attention_mask)
+
+        probas = self.final_layer(x)
+
+        return probas
+
+        # tokens = torch.argmax(probas.to("cpu"), dim=1)  # one token per batch
+
+        # # predictions
+        # # TODO is attention mask on past values correct?
+        # # TODO transformer should stop when generates [SEP]
+        # output_tokens = torch.zeros(self.batch_size, self.num_tokens, dtype=torch.int64).to(self.device)
+        # decoder_attention_mask = torch.zeros(self.batch_size * self.num_heads, self.num_tokens, self.num_tokens)
+        #
+        # for j in range(self.num_tokens):
+        #     embedded_tokens = self.embedding(output_tokens)
+        #     x = self.positional_encoder(embedded_tokens)
+        #     decoder_attention_mask[:, :j, :j] = 1
+        #
+        #     for i, decoder in enumerate(self.decoders):
+        #         x = decoder(x, k, v, input_attention_mask, decoder_attention_mask)
+        #
+        #     z = self.final_layer(x)
+        #     tokens = torch.argmax(z.to("cpu"), dim=1)  # one token per batch
+        #
+        #     output_tokens[:, j] = tokens
+
+        # return output_tokens

@@ -3,10 +3,11 @@ from datetime import datetime
 
 import torch
 from torch import nn
-from torch.utils.data import DataLoader
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 
 class Trainer:
@@ -27,11 +28,13 @@ class Trainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
 
+        self.log_batch_timeout = 1  # log after N batches
+
     def _train_one_epoch(self, epoch_index, tb_writer):
         running_loss = 0.0
         last_loss = 0.0
 
-        for i, batch in enumerate(self.train_dataloader):
+        for i, batch in tqdm(enumerate(self.train_dataloader)):
             # Extract label from batch
             labels = batch['output_ids']
 
@@ -40,7 +43,9 @@ class Trainer:
 
             # Make predictions for this batch
             outputs = self.model(batch)
-            print(outputs)
+
+            # swap token_ids with num_tokens dimensions, to match torch loss syntax
+            outputs = torch.swapaxes(outputs, -2, -1)
 
             # Compute the loss and its gradients
             loss = self.loss_fn(outputs, labels)
@@ -54,11 +59,14 @@ class Trainer:
 
             # Gather data and report
             running_loss += loss.item()
-            if i % 1000 == 999:
-                last_loss = running_loss / 1000  # loss per batch
-                print(f'  batch {i + 1} loss: {last_loss}')
+
+            if i % self.log_batch_timeout == self.log_batch_timeout - 1:
+                last_loss = running_loss / self.log_batch_timeout  # loss per batch
+                learning_rate = self.lr_scheduler.get_last_lr()[0]
+                print(f'  batch {i + 1} loss: {last_loss:.6f} | lr: {learning_rate:.2e}')
                 tb_x = epoch_index * len(self.train_dataloader) + i + 1
                 tb_writer.add_scalar('Loss/train', last_loss, tb_x)
+                tb_writer.add_scalar('Learning Rate', learning_rate, tb_x)
                 running_loss = 0.0
 
         return last_loss
@@ -77,7 +85,7 @@ class Trainer:
 
     def fit(self, num_epochs=5):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        writer = SummaryWriter(f'runs/wmt14_trainer_{timestamp}')
+        writer = SummaryWriter(f'../runs/wmt14_trainer_{timestamp}')
 
         best_vloss = 1_000_000.
 

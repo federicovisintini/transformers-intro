@@ -2,9 +2,9 @@ import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 
-from src.torch_training.device import DEVICE
+from src.dataloader.tokenizer import tokenizer
 from src.parameters import BATCH_SIZE, NUM_TOKENS, NUM_HEADS
-from src.torch_training.tokenizer import tokenizer
+from src.utils.device import DEVICE
 
 
 def reshape_attention_mask(attention_mask, num_heads):
@@ -44,7 +44,6 @@ def input_tokenization(batch, num_tokens=NUM_TOKENS):
         "input_attention_mask": inputs_attention_mask,
         "output_ids": outputs.input_ids,
         "output_attention_len": outputs_attention_mask,
-        # "labels": outputs.input_ids
     }
 
     # because BERT automatically shifts the labels,
@@ -73,5 +72,3 @@ if __name__ == '__main__':
         print("original:", original_sentence)
         print("decoded: ", decoded_sentence)
         print()
-
-    print(batch)
