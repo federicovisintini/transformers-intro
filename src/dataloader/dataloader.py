@@ -39,18 +39,21 @@ def input_tokenization(batch, num_tokens=NUM_TOKENS):
     inputs_attention_mask = reshape_attention_mask(inputs.attention_mask, num_heads=NUM_HEADS).to(DEVICE)
     outputs_attention_mask = reshape_attention_mask(outputs.attention_mask, num_heads=NUM_HEADS).to(DEVICE)
 
+    # shifting decoder.input_ids + adding BOS token at the beginning
+    bos_encoding = tokenizer(tokenizer.bos_token)
+    bos_id = bos_encoding.input_ids[1]
+    output_ids = torch.roll(outputs.input_ids, shifts=(0, 1), dims=(0, 1))
+    output_ids[:, 0] = bos_id
+
+    # TODO shall we shift the output attention mask by 1 ?
+
     batch = {
         "input_ids": inputs.input_ids,
         "input_attention_mask": inputs_attention_mask,
-        "output_ids": outputs.input_ids,
+        "output_ids": output_ids,  # shifted to the right, beginning w BOS token
         "output_attention_len": outputs_attention_mask,
+        "labels": outputs.input_ids
     }
-
-    # because BERT automatically shifts the labels,
-    # the labels correspond exactly to `decoder_input_ids`.
-    # We have to make sure that the PAD token is ignored
-    # batch["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels]
-    #                    for labels in batch["labels"]]
 
     return batch
 

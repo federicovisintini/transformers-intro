@@ -36,7 +36,7 @@ class Trainer:
 
         for i, batch in tqdm(enumerate(self.train_dataloader)):
             # Extract label from batch
-            labels = batch['output_ids']
+            labels = batch['labels']
 
             # Zero your gradients for every batch!
             self.optimizer.zero_grad()

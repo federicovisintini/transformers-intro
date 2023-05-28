@@ -86,7 +86,7 @@ class Transformer(nn.Module):
         # instead of passing recursively the predicted output,
         # we pass as decoder-input the true labels and ask to infer the next word
         # this leads to more stability during training and allows for parallel training
-        # TODO shift decoder input
+
         output_token_ids = batch['output_ids']
         output_attention_mask = batch['input_attention_mask']
         batch_size = len(output_token_ids)
