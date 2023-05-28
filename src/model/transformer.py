@@ -92,6 +92,7 @@ class Transformer(nn.Module):
         # instead of passing recursively the predicted output,
         # we pass as decoder-input the true labels and ask to infer the next word
         # this leads to more stability during training and allows for parallel training
+        # TODO shift decoder input
         output_token_ids = batch['output_ids']
         output_attention_mask = batch['input_attention_mask']
 
@@ -111,26 +112,3 @@ class Transformer(nn.Module):
         probas = self.final_layer(x)
 
         return probas
-
-        # tokens = torch.argmax(probas.to("cpu"), dim=1)  # one token per batch
-
-        # # predictions
-        # # TODO is attention mask on past values correct?
-        # # TODO transformer should stop when generates [SEP]
-        # output_tokens = torch.zeros(self.batch_size, self.num_tokens, dtype=torch.int64).to(self.device)
-        # decoder_attention_mask = torch.zeros(self.batch_size * self.num_heads, self.num_tokens, self.num_tokens)
-        #
-        # for j in range(self.num_tokens):
-        #     embedded_tokens = self.embedding(output_tokens)
-        #     x = self.positional_encoder(embedded_tokens)
-        #     decoder_attention_mask[:, :j, :j] = 1
-        #
-        #     for i, decoder in enumerate(self.decoders):
-        #         x = decoder(x, k, v, input_attention_mask, decoder_attention_mask)
-        #
-        #     z = self.final_layer(x)
-        #     tokens = torch.argmax(z.to("cpu"), dim=1)  # one token per batch
-        #
-        #     output_tokens[:, j] = tokens
-
-        # return output_tokens
