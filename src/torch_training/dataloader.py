@@ -2,9 +2,9 @@ import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 
-from src.device import DEVICE
+from src.torch_training.device import DEVICE
 from src.parameters import BATCH_SIZE, NUM_TOKENS, NUM_HEADS
-from src.tokenizer import tokenizer
+from src.torch_training.tokenizer import tokenizer
 
 
 def reshape_attention_mask(attention_mask, num_heads):
@@ -44,14 +44,14 @@ def input_tokenization(batch, num_tokens=NUM_TOKENS):
         "input_attention_mask": inputs_attention_mask,
         "output_ids": outputs.input_ids,
         "output_attention_len": outputs_attention_mask,
-        "labels": outputs.input_ids
+        # "labels": outputs.input_ids
     }
 
     # because BERT automatically shifts the labels,
     # the labels correspond exactly to `decoder_input_ids`.
     # We have to make sure that the PAD token is ignored
-    batch["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels]
-                       for labels in batch["labels"]]
+    # batch["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels]
+    #                    for labels in batch["labels"]]
 
     return batch
 

@@ -1,9 +1,9 @@
-from src.dataloader import train_dataloader
-from src.device import DEVICE
+from src.torch_training.dataloader import train_dataloader
+from src.torch_training.device import DEVICE
 from src.model import Transformer
 
 from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, BATCH_SIZE, NUM_HEADS, NUM_ENCODERS
-from src.tokenizer import VOCABULARY_SIZE, tokenizer
+from src.torch_training.tokenizer import VOCABULARY_SIZE, tokenizer
 
 if __name__ == '__main__':
     transformer = Transformer(

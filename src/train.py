@@ -1,61 +1,49 @@
-from torch import optim
+from torch import optim, nn
 
-from src.dataloader import train_dataloader, VOCABULARY_SIZE
-from src.device import DEVICE
-from src.model import init_transformer
+from src.torch_training.dataloader import train_dataloader, validation_dataloader
+from src.torch_training.device import DEVICE
+from src.model import Transformer
 from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, BATCH_SIZE, \
-    TRAIN_NUM_EPOCHS
-
-model = init_transformer(
-    vocabulary_size=VOCABULARY_SIZE,
-    embedding_size=EMBEDDING_SIZE,
-    num_tokens=NUM_TOKENS,
-    positional_encoding_scalar=POSITIONAL_ENCODING_SCALAR,
-    num_heads=NUM_HEADS,
-    batch_size=BATCH_SIZE,
-    device=DEVICE
-)
-
-optimizer = optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9)
+    TRAIN_NUM_EPOCHS, NUM_ENCODERS
+from src.torch_training.tokenizer import VOCABULARY_SIZE
+from src.torch_training.trainer import Trainer
 
 
 def lr_rate(step_num, d_model, factor, warmup_steps):
     step_num = max(1, step_num)
-    return factor * (
-        d_model ** (-0.5) * min(step_num ** (-0.5), step_num * warmup_steps ** (-1.5))
+    return factor * d_model ** (-0.5) * min(step_num ** (-0.5), step_num * warmup_steps ** (-1.5))
+
+
+if __name__ == '__main__':
+    model = Transformer(
+        vocabulary_size=VOCABULARY_SIZE,
+        embedding_size=EMBEDDING_SIZE,
+        num_tokens=NUM_TOKENS,
+        positional_encoding_scalar=POSITIONAL_ENCODING_SCALAR,
+        num_heads=NUM_HEADS,
+        num_encoders=NUM_ENCODERS,
+        batch_size=BATCH_SIZE,
+        device=DEVICE
     )
 
+    loss_fn = nn.CrossEntropyLoss()
 
-lr_scheduler = optim.lr_scheduler.LambdaLR(
-    optimizer=optimizer,
-    lr_lambda=lambda step_num: lr_rate(
-        step_num, d_model=512, factor=1, warmup_steps=4000
-    ),
-)
+    optimizer = optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9)
 
-for epoch in range(TRAIN_NUM_EPOCHS):  # loop over the dataset multiple times
+    lr_scheduler = optim.lr_scheduler.LambdaLR(
+        optimizer=optimizer,
+        lr_lambda=lambda step_num: lr_rate(
+            step_num, d_model=512, factor=1, warmup_steps=4000
+        ),
+    )
 
-    running_loss = 0.0
-    for i, batch in enumerate(train_dataloader):
+    trainer = Trainer(
+        model=model,
+        train_dataloader=train_dataloader,
+        validation_dataloader=validation_dataloader,
+        loss_fn=loss_fn,
+        optimizer=optimizer,
+        lr_scheduler=lr_scheduler
+    )
 
-        # print(model(batch))
-
-        inputs = batch['translation']['de']
-        labels = batch['translation']['en']
-
-        # zero the parameter gradients
-        optimizer.zero_grad()
-
-        # forward + backward + optimize
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        # print statistics
-        running_loss += loss.item()
-        if i % 2000 == 1999:  # print every 2000 mini-batches
-            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
-            running_loss = 0.0
-
-    print('Finished Training')
+    trainer.fit(num_epochs=TRAIN_NUM_EPOCHS)
