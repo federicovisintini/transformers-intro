@@ -5,7 +5,7 @@ from src.parameters import POSITIONAL_ENCODING_COEFFICIENTS
 
 
 class PositionalEncoder(nn.Module):
-    def __init__(self, vocabulary_size, embedding_size, num_tokens, positional_encoding_scalar, batch_size):
+    def __init__(self, vocabulary_size, embedding_size, num_tokens, positional_encoding_scalar):
         super().__init__()
 
         assert embedding_size % 2 == 0, "EMBEDDING_SIZE must be even (positional encoder)"
@@ -14,7 +14,6 @@ class PositionalEncoder(nn.Module):
         self.embedding_size = embedding_size
         self.num_tokens = num_tokens
         self.positional_encoding_scalar = positional_encoding_scalar
-        self.batch_size = batch_size
 
         self.positional_encoding_vector = nn.Parameter(
             self.compute_positional_encoding_vector(), requires_grad=False)
@@ -29,9 +28,7 @@ class PositionalEncoder(nn.Module):
         sin = torch.sin(prod)
         cos = torch.cos(prod)
 
-        data = torch.stack([sin, cos], dim=2).view(self.num_tokens, self.embedding_size)
-
-        return data.repeat(self.batch_size, 1, 1)
+        return torch.stack([sin, cos], dim=2).view(self.num_tokens, self.embedding_size)
 
     def forward(self, embedded_token):
         return embedded_token * POSITIONAL_ENCODING_COEFFICIENTS + self.positional_encoding_vector

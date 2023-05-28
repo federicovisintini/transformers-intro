@@ -37,7 +37,6 @@ if __name__ == '__main__':
         positional_encoding_scalar=POSITIONAL_ENCODING_SCALAR,
         num_heads=NUM_HEADS,
         num_encoders=NUM_ENCODERS,
-        batch_size=BATCH_SIZE,
         device=DEVICE
     )
 

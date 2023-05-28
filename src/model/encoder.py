@@ -4,8 +4,8 @@ from src.model.coder import Coder
 
 
 class Encoder(Coder):
-    def __init__(self, embedding_size, num_tokens, batch_size, num_heads):
-        super().__init__(embedding_size, num_tokens, batch_size, num_heads)
+    def __init__(self, embedding_size, num_tokens, num_heads):
+        super().__init__(embedding_size, num_tokens, num_heads)
 
         self.layer_norm_1 = nn.LayerNorm([num_tokens, embedding_size])
         self.layer_norm_2 = nn.LayerNorm([num_tokens, embedding_size])

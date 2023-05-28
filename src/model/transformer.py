@@ -16,14 +16,11 @@ class Transformer(nn.Module):
             positional_encoding_scalar: int | float,
             num_heads: int,
             num_encoders: int,
-            batch_size: int,
             device: str | torch.device
     ):
         super().__init__()
         self.num_tokens = num_tokens
         self.num_heads = num_heads
-
-        self.batch_size = batch_size
         self.device = device
 
         self.embedding = Embedding(
@@ -36,14 +33,12 @@ class Transformer(nn.Module):
             embedding_size=embedding_size,
             num_tokens=num_tokens,
             positional_encoding_scalar=positional_encoding_scalar,
-            batch_size=batch_size
         )
 
         self.encoders = nn.ModuleList([
             Encoder(
                 embedding_size=embedding_size,
                 num_tokens=num_tokens,
-                batch_size=batch_size,
                 num_heads=num_heads
             ) for _ in range(num_encoders)
         ])
@@ -57,7 +52,6 @@ class Transformer(nn.Module):
             Decoder(
                 embedding_size=embedding_size,
                 num_tokens=num_tokens,
-                batch_size=batch_size,
                 num_heads=num_heads
             ) for _ in range(num_encoders)
         ])
@@ -95,10 +89,11 @@ class Transformer(nn.Module):
         # TODO shift decoder input
         output_token_ids = batch['output_ids']
         output_attention_mask = batch['input_attention_mask']
+        batch_size = len(output_token_ids)
 
         # triangular_lower: q x kt; the first word only knows itself; the last word knows all of them
         future_attention_mask = torch.tril(
-            torch.ones(self.batch_size * self.num_heads, self.num_tokens, self.num_tokens, requires_grad=False)
+            torch.ones(batch_size * self.num_heads, self.num_tokens, self.num_tokens, requires_grad=False)
         )
 
         decoder_attention_mask = output_attention_mask * future_attention_mask

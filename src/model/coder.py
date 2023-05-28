@@ -4,7 +4,7 @@ from torch.nn import functional as F
 
 
 class Coder(nn.Module):
-    def __init__(self, embedding_size, num_tokens, batch_size, num_heads):
+    def __init__(self, embedding_size, num_tokens, num_heads):
         super().__init__()
         assert embedding_size % num_heads == 0,\
             "EMBEDDING_SIZE must be a multiple of NUM_HEADS (multi-head attention)"
@@ -12,7 +12,6 @@ class Coder(nn.Module):
         # parameters
         self.embedding_size = embedding_size
         self.num_tokens = num_tokens
-        self.batch_size = batch_size
         self.num_heads = num_heads
         self.head_feature = self.embedding_size // self.num_heads
         self.dim_model = embedding_size
@@ -24,7 +23,7 @@ class Coder(nn.Module):
         self.v_matrix = nn.Parameter(torch.randn(*self.qkv_matrix_dim), requires_grad=True)
 
         self.feature_reduction_matrix = nn.Parameter(
-            torch.randn(batch_size, embedding_size, self.dim_model), requires_grad=True)
+            torch.randn(embedding_size, self.dim_model), requires_grad=True)
 
         # feed forward layer
         self.feed_forward_layer = nn.Linear(self.dim_model, self.embedding_size)
@@ -43,7 +42,7 @@ class Coder(nn.Module):
 
         qkv = torch.tensordot(x, matrix, dims=([2], [1]))  # 3, 32, 8, 64
         qkv = torch.swapaxes(qkv, 1, 2)  # 3, 8, 32, 64
-        qkv = torch.reshape(qkv, (self.batch_size * self.num_heads, self.num_tokens, self.head_feature))  # 24, 32, 64
+        qkv = torch.reshape(qkv, (-1, self.num_tokens, self.head_feature))  # 24, 32, 64
 
         return qkv  # 24, 32, 64
 
@@ -60,9 +59,9 @@ class Coder(nn.Module):
 
         z = F.softmax(torch.div(z, self.head_feature ** 0.5), dim=-1)  # 24, 32, 32
         z = torch.bmm(z, v)  # 24, 32, 64
-        z = torch.reshape(z, (self.batch_size, self.num_heads, self.num_tokens, self.head_feature))  # 3, 8, 32, 64
+        z = torch.reshape(z, (-1, self.num_heads, self.num_tokens, self.head_feature))  # 3, 8, 32, 64
         z = torch.swapaxes(z, 1, 2)  # 3, 32, 8, 64
-        z = torch.reshape(z, (self.batch_size, self.num_tokens, self.embedding_size))  # 3, 32, 512
+        z = torch.reshape(z, (-1, self.num_tokens, self.embedding_size))  # 3, 32, 512
 
         return z
 
@@ -73,7 +72,7 @@ class Coder(nn.Module):
 
         z = self.qkv_product(q, k, v, attention_mask)
 
-        return torch.bmm(z, self.feature_reduction_matrix)  # 3, 32, 512
+        return torch.matmul(z, self.feature_reduction_matrix)  # 3, 32, 512
 
     def feed_forward(self, x):
         z = self.feed_forward_layer(x)
