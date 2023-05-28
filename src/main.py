@@ -3,7 +3,7 @@ import torch
 from src.dataloader.dataloader import train_dataloader
 from src.dataloader.tokenizer import VOCABULARY_SIZE, tokenizer
 from src.model import Transformer
-from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, BATCH_SIZE, NUM_HEADS, NUM_ENCODERS
+from src.parameters import EMBEDDING_SIZE, POSITIONAL_ENCODING_SCALAR, NUM_TOKENS, NUM_HEADS, NUM_ENCODERS
 from src.utils.device import DEVICE
 
 
@@ -11,8 +11,7 @@ from src.utils.device import DEVICE
 def predict(model, batch):
     cls_id, sep_id = tokenizer('')['input_ids']
 
-    x = torch.tensor(cls_id, requires_grad=False)
-    output = [x.repeat(len(batch['output_ids']))]
+    output = [torch.tensor([cls_id], requires_grad=False)]
     for token_number in range(1, model.num_tokens):
         # decoder_attention_mask = torch.zeros(
         #   self.batch_size * self.num_heads, self.num_tokens, self.num_tokens)
@@ -22,8 +21,8 @@ def predict(model, batch):
         next_token = tokens[:, token_number]
         output.append(next_token)
 
-        # if next_token == sep_id:
-        #     break
+        if next_token.item() == sep_id:
+            break
 
     output = torch.stack(output)
     return torch.swapaxes(output, 0, 1)
@@ -44,8 +43,9 @@ if __name__ == '__main__':
 
     i, batch = next(enumerate(train_dataloader))
 
-    # probas = transformer(batch)
-    # tokens = torch.argmax(probas.to("cpu"), dim=-1)
+    for key, value in batch.items():
+        batch[key] = value[:1]
+
     tokens = predict(transformer, batch)
 
     print("transformer output tokens size:", tokens.size(), "\n")
