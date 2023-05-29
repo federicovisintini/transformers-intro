@@ -44,7 +44,7 @@ if __name__ == '__main__':
         device=DEVICE
     )
 
-    # print(transformer)
+    print(transformer)
     print(f"{count_parameters(transformer) / 1e6:.0f}M parameters")
 
     i, batch = next(enumerate(train_dataloader))

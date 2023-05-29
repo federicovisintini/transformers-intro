@@ -8,6 +8,9 @@ from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from transformers import PreTrainedTokenizerFast
+
+from src.parameters import TRAIN_NUM_BATCHES
 
 
 class Trainer:
@@ -18,7 +21,8 @@ class Trainer:
             validation_dataloader: DataLoader,
             loss_fn: nn.Module | typing.Callable,
             optimizer: Optimizer,
-            lr_scheduler: LRScheduler
+            lr_scheduler: LRScheduler,
+            tokenizer: PreTrainedTokenizerFast
     ):
         self.model = model
         self.train_dataloader = train_dataloader
@@ -27,6 +31,7 @@ class Trainer:
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
+        self.tokenizer = tokenizer
 
         self.log_batch_timeout = 10  # log after N batches
 
@@ -69,15 +74,33 @@ class Trainer:
                 tb_writer.add_scalar('Learning Rate', learning_rate, tb_x)
                 running_loss = 0.0
 
+            if i % TRAIN_NUM_BATCHES == TRAIN_NUM_BATCHES - 1:
+                break
+
         return last_loss
 
     def _validate_one_epoch(self):
         running_vloss = 0.0
-        for i, vdata in enumerate(self.validation_dataloader):
-            vinputs, vlabels = vdata
-            voutputs = self.model(vinputs)
+        for i, batch in tqdm(enumerate(self.validation_dataloader)):
+            # Extract label from batch
+            vlabels = batch['labels']
+
+            outputs = self.model(batch)
+            voutputs = torch.swapaxes(outputs, -2, -1)
+
             vloss = self.loss_fn(voutputs, vlabels)
             running_vloss += vloss
+
+            if i % TRAIN_NUM_BATCHES == TRAIN_NUM_BATCHES - 1:
+                tokens = torch.argmax(outputs.to("cpu"), dim=-1)
+
+                for original_sentence, translated_sentence in zip(
+                        self.tokenizer.batch_decode(batch['input_ids']), self.tokenizer.batch_decode(tokens)):
+                    print(original_sentence)
+                    print(translated_sentence)
+                    print()
+
+                break
 
         avg_vloss = running_vloss / (i + 1)
 
@@ -112,7 +135,7 @@ class Trainer:
             # Track the best performance, and save the model's state
             if avg_vloss < best_vloss:
                 best_vloss = avg_vloss
-                model_path = f'model_{timestamp}_{epoch}'
+                model_path = f'../checkpoints/model_{timestamp}_{epoch}'
                 torch.save(self.model.state_dict(), model_path)
 
     def validate(self):

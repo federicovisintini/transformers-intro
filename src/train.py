@@ -1,12 +1,11 @@
 from torch import optim, nn
 
-from src.dataloader.dataloader import train_dataloader, validation_dataloader
-from src.dataloader.tokenizer import VOCABULARY_SIZE
+from src.dataloader import train_dataloader, validation_dataloader, tokenizer, VOCABULARY_SIZE
 from src.model import Transformer
 from src.parameters import EMBEDDING_SIZE, NUM_TOKENS, POSITIONAL_ENCODING_SCALAR, NUM_HEADS, \
     TRAIN_NUM_EPOCHS, NUM_ENCODERS
-from src.trainer.trainer import Trainer
-from src.utils.device import DEVICE
+from src.trainer import Trainer
+from src.utils import DEVICE
 
 
 def lr_rate(step_num, d_model, factor, warmup_steps):
@@ -42,7 +41,8 @@ if __name__ == '__main__':
         validation_dataloader=validation_dataloader,
         loss_fn=loss_fn,
         optimizer=optimizer,
-        lr_scheduler=lr_scheduler
+        lr_scheduler=lr_scheduler,
+        tokenizer=tokenizer
     )
 
     trainer.fit(num_epochs=TRAIN_NUM_EPOCHS)
